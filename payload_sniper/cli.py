@@ -23,13 +23,21 @@ def run_audit(url: str, fast: bool = False, simulate_mobile: bool = False) -> di
 
 
 def main():
+    from payload_sniper import __version__
     parser = argparse.ArgumentParser(
+        prog="payload-sniper",
         description="PayloadSniper: Edge-Cached Code Split, INP & Core Web Vitals Bloat-Tracer",
         epilog="Example: python run.py https://webaudits.pro",
     )
     parser.add_argument(
         "url",
+        nargs="?",
         help="Target URL to profile for JavaScript hydration, Long Tasks, and INP bottlenecks.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"PayloadSniper v{__version__}",
     )
     parser.add_argument(
         "--fast",
@@ -55,6 +63,9 @@ def main():
     )
 
     args = parser.parse_args()
+    if not args.url:
+        parser.print_help()
+        return 0
 
     target_url = args.url.strip()
     if not target_url.startswith("http://") and not target_url.startswith("https://"):

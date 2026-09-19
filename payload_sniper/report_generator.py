@@ -16,6 +16,24 @@ except ImportError:
     HAS_RICH = False
 
 
+def _safe_str(text: Any) -> str:
+    if not isinstance(text, str):
+        text = str(text or "")
+    text = (
+        text.replace("\u2192", "->")
+        .replace("\u2190", "<-")
+        .replace("\u2194", "<->")
+        .replace("\u2022", "*")
+        .replace("\u2019", "'")
+        .replace("\u2018", "'")
+        .replace("\u201c", '"')
+        .replace("\u201d", '"')
+        .replace("\u2014", "-")
+        .replace("\u2013", "-")
+    )
+    return text.encode("ascii", errors="replace").decode("ascii")
+
+
 def print_terminal_report(audit_result: Dict[str, Any]) -> None:
     """Print complete script audit report to terminal."""
     if not HAS_RICH:
@@ -24,7 +42,7 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
 
     console = Console()
 
-    url = audit_result.get("url", "")
+    url = _safe_str(audit_result.get("url", ""))
     score = audit_result.get("overall_score", 0.0)
     grade = audit_result.get("grade", "F")
     stats = audit_result.get("stats", {})
@@ -89,8 +107,8 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
             type_str = "[yellow]Third-Party[/yellow]" if v.get("is_third_party") else "[green]First-Party[/green]"
             block_str = f"[red]{v.get('blocking_scripts')}[/red]" if v.get("blocking_scripts", 0) > 0 else "[green]0[/green]"
             v_table.add_row(
-                v.get("vendor", ""),
-                v.get("category", ""),
+                _safe_str(v.get("vendor", "")),
+                _safe_str(v.get("category", "")),
                 type_str,
                 str(v.get("script_count", 0)),
                 block_str,
@@ -113,8 +131,8 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
                 f"{lt.get('start_time')}ms",
                 f"{lt.get('duration')}ms",
                 f"+{lt.get('blocking_time')}ms",
-                lt.get("vendor", ""),
-                lt.get("initiating_source", ""),
+                _safe_str(lt.get("vendor", "")),
+                _safe_str(lt.get("initiating_source", "")),
             )
 
         console.print(lt_table)
@@ -126,7 +144,7 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
         rec_table.add_column("Priority", justify="center", style="dim")
         rec_table.add_column("Recommended Remediation Step", style="white")
         for i, r in enumerate(recs, 1):
-            rec_table.add_row(str(i), r)
+            rec_table.add_row(str(i), _safe_str(r))
         console.print(rec_table)
 
     console.print()

@@ -3,6 +3,9 @@ Unit tests for PayloadSniper script profiling, vendor classification, and INP es
 """
 
 import unittest
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from payload_sniper.script_analyzer import classify_script_vendor
 from payload_sniper.scorer import calculate_tbt_score, estimate_inp_risk, audit_profile_results
 
