@@ -261,6 +261,6 @@ def export_json_report(audit_result: Dict[str, Any]) -> dict:
     """Build JSON-serializable audit report dict."""
     return {
         "tool": "PayloadSniper",
-        "version": "1.0.0",
+        "version": "1.1.0",
         **audit_result,
     }
