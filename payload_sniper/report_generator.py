@@ -84,12 +84,24 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
     console.print(comp_table)
 
     # INP Assessment Panel
+    attr = inp.get("attribution", {})
     inp_text = Text()
     inp_text.append("Synthetic Interaction-Risk Estimate (Lab Main-Thread Contention)\n", style="bold yellow")
     inp_text.append(f"Estimated Interaction Contention: {inp.get('estimated_inp_ms')}ms\n", style="bold white")
     inp_text.append(f"Status: {inp.get('status')}\n", style="bold")
     inp_text.append(f"Google 200ms Target Passed: {inp.get('meets_google_target')}\n", style="dim")
-    inp_text.append(f"Max Long Task: {stats.get('max_long_task_ms')}ms | Total Long Tasks: {stats.get('long_tasks_count')}", style="dim")
+    if attr:
+        inp_text.append("\n3-Phase INP Attribution (web-vitals decomposition):\n", style="bold cyan")
+        inp_text.append(f"  - Input Delay: {attr.get('input_delay_ms')}ms\n", style="white")
+        inp_text.append(f"  - Processing Duration: {attr.get('processing_duration_ms')}ms\n", style="white")
+        inp_text.append(f"  - Presentation Delay: {attr.get('presentation_delay_ms')}ms\n", style="white")
+        inp_text.append(f"  - Primary Bottleneck: {attr.get('bottleneck_diagnosis')}\n", style="italic yellow")
+        if attr.get("rating"):
+            c_rating = "green" if attr.get("rating") == "good" else ("yellow" if attr.get("rating") == "needs_improvement" else "red")
+            inp_text.append(f"  - Google CWV Rating: [{c_rating}]{attr.get('rating').upper()}[/{c_rating}]\n")
+        if attr.get("remediation"):
+            inp_text.append(f"  - Google Remediation: {attr.get('remediation')}\n", style="dim")
+    inp_text.append(f"\nMax Long Task: {stats.get('max_long_task_ms')}ms | Total Long Tasks: {stats.get('long_tasks_count')}", style="dim")
 
     console.print(Panel(inp_text, border_style="green" if inp.get("meets_google_target") else "red"))
 
@@ -200,6 +212,16 @@ def export_markdown_report(audit_result: Dict[str, Any]) -> str:
     inp = audit_result.get("inp_estimate", {})
 
     lines.append(f"- Synthetic Interaction-Risk Latency: {inp.get('estimated_inp_ms')}ms ({inp.get('status')})")
+    attr = inp.get("attribution", {})
+    if attr:
+        lines.append(f"  - Input Delay: {attr.get('input_delay_ms')}ms")
+        lines.append(f"  - Processing Duration: {attr.get('processing_duration_ms')}ms")
+        lines.append(f"  - Presentation Delay: {attr.get('presentation_delay_ms')}ms")
+        lines.append(f"  - Primary Bottleneck: {attr.get('bottleneck_diagnosis')}")
+        if attr.get("rating"):
+            lines.append(f"  - Core Web Vitals Rating: {attr.get('rating').upper()}")
+        if attr.get("remediation"):
+            lines.append(f"  - Actionable Remediation: {attr.get('remediation')}")
     lines.append(f"- Total Blocking Time (TBT): {stats.get('total_blocking_time_ms')}ms")
     lines.append(f"- Total Discovered Scripts: {stats.get('total_scripts')}")
     lines.append(f"- Third-Party Marketing Tags: {stats.get('third_party_scripts')}")

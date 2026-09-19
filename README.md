@@ -4,6 +4,8 @@ Main-thread Long Tasks, script bloat, and synthetic interaction-risk tracer.
 
 Part of the [WebAudits.pro](https://webaudits.pro) technical intelligence platform.
 
+![Terminal Verification](assets/terminal_preview.png)
+
 ---
 
 ## Quickstart

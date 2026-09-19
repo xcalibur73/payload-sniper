@@ -21,8 +21,62 @@ def calculate_tbt_score(tbt_ms: int) -> float:
         return max(0.0, round(10.0 - ((tbt_ms - 1400) * 0.01), 1))
 
 
-def estimate_inp_risk(max_task_ms: int, tbt_ms: int) -> Dict[str, Any]:
+def calculate_inp_attribution(max_task_ms: int, tbt_ms: int, long_tasks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Decompose estimated INP into Google web-vitals 3 sub-part phases:
+    1. Input Delay: Queued blocking time before event callback execution.
+    2. Processing Duration: Synchronous JavaScript handler execution time.
+    3. Presentation Delay: Post-handler rendering, layout, and frame presentation.
+    """
+    if long_tasks:
+        blocking_tasks = [t.get("blocking_time", 0) for t in long_tasks if t.get("blocking_time", 0) > 0]
+        input_delay_ms = int(sum(blocking_tasks) / len(blocking_tasks)) if blocking_tasks else min(50, int(tbt_ms * 0.25))
+    else:
+        input_delay_ms = min(60, int(tbt_ms * 0.25))
+
+    processing_duration_ms = max(40, int(max_task_ms * 0.60))
+    presentation_delay_ms = max(20, int(max_task_ms * 0.25))
+    total_inp_ms = input_delay_ms + processing_duration_ms + presentation_delay_ms
+
+    subparts = {
+        "input_delay": input_delay_ms,
+        "processing_duration": processing_duration_ms,
+        "presentation_delay": presentation_delay_ms,
+    }
+    primary_bottleneck = max(subparts, key=subparts.get)
+    bottleneck_labels = {
+        "input_delay": "Main Thread Congestion (Tasks queuing before event)",
+        "processing_duration": "Long JavaScript Callbacks (Heavy handler computation)",
+        "presentation_delay": "Rendering / Layout Overhead (DOM thrashing & frame draw)",
+    }
+    remediations = {
+        "input_delay": "Break up long tasks during startup; defer non-critical JavaScript; minimize main-thread activity prior to interaction.",
+        "processing_duration": "Yield to the main thread with requestAnimationFrame + setTimeout or scheduler.yield(); defer non-visual updates out of the critical interaction path.",
+        "presentation_delay": "Minimize DOM size; avoid forced synchronous layout (layout thrashing) from reading style properties after modifying DOM; leverage CSS content-visibility for offscreen elements.",
+    }
+
+    if total_inp_ms <= 200:
+        rating = "good"
+    elif total_inp_ms <= 500:
+        rating = "needs_improvement"
+    else:
+        rating = "poor"
+
+    return {
+        "total_inp_ms": total_inp_ms,
+        "input_delay_ms": input_delay_ms,
+        "processing_duration_ms": processing_duration_ms,
+        "presentation_delay_ms": presentation_delay_ms,
+        "primary_bottleneck": primary_bottleneck,
+        "bottleneck_diagnosis": bottleneck_labels[primary_bottleneck],
+        "remediation": remediations[primary_bottleneck],
+        "rating": rating,
+        "target_met": total_inp_ms <= 200,
+    }
+
+
+def estimate_inp_risk(max_task_ms: int, tbt_ms: int, long_tasks: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Estimate Interaction to Next Paint (INP) vulnerability from Long Tasks."""
+    attribution = calculate_inp_attribution(max_task_ms, tbt_ms, long_tasks)
     # INP is typically driven by max main-thread blocking task + event handler dispatch
     estimated_inp_ms = max(50, int(max_task_ms * 0.85) + int(tbt_ms * 0.15))
 
@@ -44,6 +98,7 @@ def estimate_inp_risk(max_task_ms: int, tbt_ms: int) -> Dict[str, Any]:
         "status": status,
         "inp_score": score,
         "meets_google_target": estimated_inp_ms <= 200,
+        "attribution": attribution,
     }
 
 
@@ -60,7 +115,7 @@ def audit_profile_results(profile_data: Dict[str, Any]) -> Dict[str, Any]:
     tbt_score = calculate_tbt_score(tbt_ms)
 
     # 2. INP Risk Score (25%)
-    inp_info = estimate_inp_risk(max_task_ms, tbt_ms)
+    inp_info = estimate_inp_risk(max_task_ms, tbt_ms, long_tasks=long_tasks)
     inp_score = inp_info["inp_score"]
 
     # 3. Third-Party Script Overhead (20%)

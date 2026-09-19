@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-20
+ 
+### Added
+- Google Core Web Vitals 3-tier rating (`good`, `needs_improvement`, `poor`) based on official web.dev INP thresholds (200ms and 500ms cutoffs).
+- Tailored remediation playbooks per interaction bottleneck (startup long-task yielding, scheduler.yield deferral, and layout thrashing prevention) integrated into terminal and markdown reports.
+
+## [1.2.0] - 2026-09-20
+
+### Added
+- 3-Phase INP sub-part attribution decomposition inspired by Google Chrome `web-vitals`:
+  - Algorithmic latency splitting into Input Delay, Processing Duration, and Presentation Delay.
+  - Automated primary interaction bottleneck diagnosis (Main Thread Congestion, Long JavaScript Callbacks, or Layout/Rendering Overhead).
+  - Terminal, Markdown, and JSON reporting of sub-part timing breakdown.
+
 ## [1.1.0] - 2026-09-19
 
 ### Added

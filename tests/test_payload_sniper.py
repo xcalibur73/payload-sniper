@@ -52,6 +52,25 @@ class TestTBTAndINPScorer(unittest.TestCase):
         self.assertFalse(res["meets_google_target"])
         self.assertEqual(res["status"], "Poor (Severe Interaction Delay)")
 
+    def test_inp_3phase_attribution(self):
+        from payload_sniper.scorer import calculate_inp_attribution
+        long_tasks = [
+            {"duration": 150, "blocking_time": 100},
+            {"duration": 90, "blocking_time": 40},
+        ]
+        attr = calculate_inp_attribution(max_task_ms=150, tbt_ms=140, long_tasks=long_tasks)
+        self.assertIn("input_delay_ms", attr)
+        self.assertIn("processing_duration_ms", attr)
+        self.assertIn("presentation_delay_ms", attr)
+        self.assertEqual(attr["input_delay_ms"], 70)
+        self.assertEqual(attr["processing_duration_ms"], 90)
+        self.assertEqual(attr["presentation_delay_ms"], 37)
+        self.assertEqual(attr["total_inp_ms"], 197)
+        self.assertEqual(attr["primary_bottleneck"], "processing_duration")
+        self.assertEqual(attr["rating"], "good")
+        self.assertIn("Yield to the main thread", attr["remediation"])
+        self.assertTrue(attr["target_met"])
+
 
 class TestAuditProfileResults(unittest.TestCase):
 
