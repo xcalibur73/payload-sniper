@@ -85,8 +85,8 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
 
     # INP Assessment Panel
     inp_text = Text()
-    inp_text.append("Interaction to Next Paint (INP) Vulnerability Assessment\n", style="bold yellow")
-    inp_text.append(f"Estimated Interaction Latency: {inp.get('estimated_inp_ms')}ms\n", style="bold white")
+    inp_text.append("Synthetic Interaction-Risk Estimate (Lab Main-Thread Contention)\n", style="bold yellow")
+    inp_text.append(f"Estimated Interaction Contention: {inp.get('estimated_inp_ms')}ms\n", style="bold white")
     inp_text.append(f"Status: {inp.get('status')}\n", style="bold")
     inp_text.append(f"Google 200ms Target Passed: {inp.get('meets_google_target')}\n", style="dim")
     inp_text.append(f"Max Long Task: {stats.get('max_long_task_ms')}ms | Total Long Tasks: {stats.get('long_tasks_count')}", style="dim")
@@ -177,7 +177,7 @@ def export_markdown_report(audit_result: Dict[str, Any]) -> str:
     stats = audit_result.get("stats", {})
     inp = audit_result.get("inp_estimate", {})
 
-    lines.append(f"- Estimated INP Latency: {inp.get('estimated_inp_ms')}ms ({inp.get('status')})")
+    lines.append(f"- Synthetic Interaction-Risk Latency: {inp.get('estimated_inp_ms')}ms ({inp.get('status')})")
     lines.append(f"- Total Blocking Time (TBT): {stats.get('total_blocking_time_ms')}ms")
     lines.append(f"- Total Discovered Scripts: {stats.get('total_scripts')}")
     lines.append(f"- Third-Party Marketing Tags: {stats.get('third_party_scripts')}")

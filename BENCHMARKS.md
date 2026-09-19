@@ -1,17 +1,19 @@
-# PayloadSniper: Empirical 12-Site JavaScript Hydration & INP Benchmark
+# PayloadSniper: 12-Site JavaScript Hydration & Main-Thread Blocking Study
 
-Evaluation of JavaScript execution overhead, main-thread Long Tasks (> 50ms), and third-party marketing tag congestion across 12 production websites gathered while beta testing on random sites.
+Evaluation of JavaScript execution overhead, main-thread Long Tasks (> 50ms), and third-party marketing tag congestion across 12 production websites gathered during local testing.
 
 ---
 
 ## Methodology
 
-Evaluated while beta testing on random sites using PayloadSniper v1.0.0. Audits evaluated:
+Evaluated using PayloadSniper v1.0.0. Audits measured:
 1. Main-thread execution timelines captured via Chrome DevTools Protocol (CDP) `PerformanceObserver` buffering.
 2. Total Blocking Time (TBT) accumulated between First Contentful Paint (FCP) and Time to Interactive (TTI).
 3. Long Tasks profiling isolating maximum continuous execution blocks (> 50ms).
 4. Third-party marketing attribution mapping (Google Tag Manager, Meta Pixel, Hotjar, Klaviyo, HubSpot, TikTok Pixel).
-5. Synthetic Interaction to Next Paint (INP) vulnerability risk classification against Google's 200ms Core Web Vitals target.
+5. Synthetic interaction-risk estimate modeling main-thread input contention against Google's 200ms Core Web Vitals target.
+
+> **Note on Metrics:** Real-world Interaction to Next Paint (INP) is measured via Real User Monitoring (RUM) during discrete user interactions. The "Estimated INP" reported below is a project-derived synthetic heuristic based on lab Total Blocking Time and Long Task distribution during initial load and idle.
 
 Testing environment: Python 3.10, Headless Chromium, simulated 4x CPU throttling, 2026-09-19.
 
@@ -36,16 +38,16 @@ Testing environment: Python 3.10, Headless Chromium, simulated 4x CPU throttling
 
 ---
 
-## Key Engineering Findings
+## Key Engineering Observations
 
 ### 1. Third-Party Script Bloat Dictates 70%+ of Total Blocking Time
-On media and publishing sites (`nytimes.com`, `cnn.com`, `theverge.com`), third-party analytics and advertising pixels account for 71.4% of total main-thread blocking time. Tag management containers (GTM) injecting multiple asynchronous tracking scripts create continuous micro-tasks that prevent user input dispatch.
+On surveyed media and publishing sites (`nytimes.com`, `cnn.com`, `theverge.com`), third-party analytics and advertising pixels accounted for 71.4% of total main-thread blocking time. Tag management containers (GTM) injecting multiple asynchronous tracking scripts create continuous micro-tasks that delay user input dispatch.
 
 ### 2. The SPA Hydration Input Gap
-Client-side rendered and hydrated SPAs generate an initial execution spike between 1.2s and 2.8s post-navigation. While pages visually appear loaded, user clicks during this hydration window experience input delays exceeding 250ms, triggering poor field INP ratings.
+Client-side rendered and hydrated SPAs generated an initial execution spike between 1.2s and 2.8s post-navigation. While pages visually appeared loaded, simulated main-thread contention during this hydration window created input delay vulnerability.
 
 ### 3. Yielding to the Main Thread Is Rarely Implemented
-91.7% of surveyed production applications fail to implement cooperative scheduling APIs (`scheduler.yield()` or `requestIdleCallback`). Long tasks are executed as monolithic continuous blocks rather than chunked tasks, directly starving the browser's render pipeline.
+11 of the 12 surveyed production applications did not leverage cooperative scheduling APIs (`scheduler.yield()` or `requestIdleCallback`). Scripts executed as monolithic blocks rather than chunked tasks, starving the browser's render pipeline.
 
-### 4. Tag Managers Mask Severe Network and CPU Costs
-Sites deploying Google Tag Manager average 2.8x more total blocking time than sites with direct first-party telemetry, as unmonitored marketing scripts are continually injected without developer code reviews.
+### 4. Tag Managers Mask Network and CPU Costs
+Sites deploying Google Tag Manager averaged 2.8x more total blocking time than sites with direct first-party telemetry, as unmonitored marketing scripts are continually injected without developer code reviews.
