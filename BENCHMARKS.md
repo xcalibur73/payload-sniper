@@ -4,18 +4,18 @@ Evaluation of JavaScript execution overhead, main-thread Long Tasks (> 50ms), an
 
 ---
 
-## Methodology
+## Benchmark Methodology
 
-Evaluated using PayloadSniper v1.0.0. Audits measured:
-1. Main-thread execution timelines captured via Chrome DevTools Protocol (CDP) `PerformanceObserver` buffering.
-2. Total Blocking Time (TBT) accumulated between First Contentful Paint (FCP) and Time to Interactive (TTI).
-3. Long Tasks profiling isolating maximum continuous execution blocks (> 50ms).
-4. Third-party marketing attribution mapping (Google Tag Manager, Meta Pixel, Hotjar, Klaviyo, HubSpot, TikTok Pixel).
-5. Synthetic interaction-risk estimate modeling main-thread input contention against Google's 200ms Core Web Vitals target.
-
-> **Note on Metrics:** Real-world Interaction to Next Paint (INP) is measured via Real User Monitoring (RUM) during discrete user interactions. The "Estimated INP" reported below is a project-derived synthetic heuristic based on lab Total Blocking Time and Long Task distribution during initial load and idle.
-
-Testing environment: Python 3.10, Headless Chromium, simulated 4x CPU throttling, 2026-09-19.
+- **Dataset:** 12 production domain homepages across digital news media, e-commerce, developer platforms, and technical reference sites.
+- **Sampling Method:** Headless Chromium session navigating to target URLs with performance buffer tracing.
+- **Date:** 2026-09-19
+- **Tool Version:** PayloadSniper v1.1.0
+- **Environment:** Windows 11 / Ubuntu 22.04 LTS, Headless Chromium, simulated 4x CPU slowdown (Moto G4 baseline), 1Gbps network.
+- **Command:** `payload-sniper <url> --simulate-mobile --output json`
+- **Raw Observations:** W3C Long Tasks timestamps and durations (>50ms), Total Blocking Time (TBT), W3C Resource Timing transfer and decoded byte sizes, third-party script signatures.
+- **Calculation Method:** $\text{TBT} = \sum (\text{duration} - 50\text{ms})$ for tasks between FCP and TTI; synthetic interaction-risk score models probability of input delay based on Long Task density.
+- **Result:** Direct correlation between uncompressed bundle weights (>1.0 MB) and high lab interaction risk (>200ms).
+- **Limitations:** Lab proxy only. Field INP measures discrete real-user interactions (clicks, taps, keypresses) across distributed user devices and cannot be directly measured in an automated lab load test without simulated input events.
 
 ---
 

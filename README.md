@@ -39,6 +39,26 @@ PayloadSniper isolates the exact script origins responsible for main-thread cong
 
 ---
 
+## Visual Diagnostic Workflow
+
+```text
+[Input Target URL]
+        |
+        v
+[1. Chromium CDP Performance Trace] -> Finding: 1,480ms Total Blocking Time (TBT) under 4x CPU throttling
+        |                              Root Cause: 8 Long Tasks (> 50ms) during initial bundle evaluation
+        v
+[2. Resource Timing Byte Analysis] --> Finding: Top bundle "vendor.chunk.js" is 1.4 MB uncompressed
+        |                              Status: Exceeds 1.0 MB uncompressed JavaScript budget
+        v
+[3. Tag Attribution Inventory] ------> Finding: 3 marketing tags injected via GTM blocking main thread
+        |
+        v
+[4. Recommended Fix] ----------------> Dynamic import heavy modules; defer marketing tags via Web Worker (Partytown)
+```
+
+---
+
 ## Usage & CLI Options
 
 ```bash
