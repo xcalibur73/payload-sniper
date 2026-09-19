@@ -116,6 +116,25 @@ def print_terminal_report(audit_result: Dict[str, Any]) -> None:
 
         console.print(v_table)
 
+    # Heaviest Scripts Table (Resource Timing)
+    heaviest = stats.get("heaviest_scripts", [])
+    if heaviest:
+        h_table = Table(title="Top Heaviest JavaScript Payloads (Resource Timing)", show_header=True, header_style="bold yellow")
+        h_table.add_column("Script URL", style="white", max_width=50, overflow="ellipsis")
+        h_table.add_column("Transfer Size", justify="center", style="cyan")
+        h_table.add_column("Uncompressed", justify="center", style="yellow")
+        h_table.add_column("Vendor", style="dim")
+
+        for h in heaviest:
+            h_table.add_row(
+                _safe_str(h.get("url", "")),
+                f"{h.get('transfer_kb')} KB",
+                f"{h.get('decoded_kb')} KB",
+                _safe_str(h.get("vendor", "")),
+            )
+
+        console.print(h_table)
+
     # Long Tasks Table
     long_tasks = audit_result.get("long_tasks", [])
     if long_tasks:
@@ -157,9 +176,12 @@ def _print_plain_report(audit_result: Dict[str, Any]) -> None:
     print(f"Overall Script Performance Score: {audit_result.get('overall_score')}/100 (Grade: {audit_result.get('grade')})")
 
     inp = audit_result.get("inp_estimate", {})
+    stats = audit_result.get("stats", {})
     print(f"Estimated INP: {inp.get('estimated_inp_ms')}ms ({inp.get('status')})")
-    print(f"Total Blocking Time: {audit_result.get('stats', {}).get('total_blocking_time_ms')}ms")
-    print(f"Total Scripts: {audit_result.get('stats', {}).get('total_scripts')}")
+    print(f"Total Blocking Time: {stats.get('total_blocking_time_ms')}ms")
+    print(f"Total Scripts: {stats.get('total_scripts')}")
+    if stats.get("total_js_transfer_kb", 0) > 0:
+        print(f"JavaScript Payload: {stats.get('total_js_transfer_kb')} KB (Transfer) / {stats.get('total_js_decoded_kb')} KB (Uncompressed)")
 
     print("\n--- Recommendations ---")
     for r in audit_result.get("recommendations", []):
@@ -181,7 +203,11 @@ def export_markdown_report(audit_result: Dict[str, Any]) -> str:
     lines.append(f"- Total Blocking Time (TBT): {stats.get('total_blocking_time_ms')}ms")
     lines.append(f"- Total Discovered Scripts: {stats.get('total_scripts')}")
     lines.append(f"- Third-Party Marketing Tags: {stats.get('third_party_scripts')}")
-    lines.append(f"- Render-Blocking Head Scripts: {stats.get('render_blocking_scripts')}\n")
+    lines.append(f"- Render-Blocking Head Scripts: {stats.get('render_blocking_scripts')}")
+    if stats.get("total_js_transfer_kb", 0) > 0:
+        lines.append(f"- Total JS Wire Transfer: {stats.get('total_js_transfer_kb')} KB")
+        lines.append(f"- Total JS Parsed Size: {stats.get('total_js_decoded_kb')} KB")
+    lines.append("")
 
     # Component Scores
     lines.append("---\n")
@@ -197,6 +223,16 @@ def export_markdown_report(audit_result: Dict[str, Any]) -> str:
         ("Bundle & Tag Efficiency", "10%", "bundle_efficiency"),
     ]:
         lines.append(f"| {name} | {weight} | {comp.get(key, 0)}/100 |")
+
+    # Heaviest Payloads
+    heaviest = stats.get("heaviest_scripts", [])
+    if heaviest:
+        lines.append("\n---\n")
+        lines.append("## Heaviest JavaScript Files\n")
+        lines.append("| Script URL | Wire Transfer | Uncompressed | Vendor |")
+        lines.append("|:---|:---:|:---:|:---|")
+        for h in heaviest:
+            lines.append(f"| `{h.get('url')}` | {h.get('transfer_kb')} KB | {h.get('decoded_kb')} KB | {h.get('vendor')} |")
 
     # Vendor Breakdown
     vendors = audit_result.get("vendor_breakdown", [])

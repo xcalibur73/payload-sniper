@@ -32,6 +32,7 @@ Sites frequently pass static Lighthouse audits yet suffer poor real-world intera
 PayloadSniper isolates the exact script origins responsible for main-thread congestion:
 - **Main-Thread Long Tasks:** Captures tasks exceeding the 50ms threshold defined in the W3C Long Tasks API.
 - **Total Blocking Time (TBT):** Accumulates blocking time between First Contentful Paint and Time to Interactive.
+- **JavaScript Byte-Weight Profiling:** Queries W3C Resource Timing API to report wire transfer sizes, uncompressed parsed byte weight, and ranks the Top 5 heaviest script bundles.
 - **Third-Party Script Attribution:** Categorizes script origins against known first-party and third-party signatures (Google Tag Manager, Meta Pixel, Hotjar, Klaviyo, Intercom).
 - **Synthetic Interaction-Risk Estimate:** Synthesizes a lab-based interaction friction estimate to evaluate main-thread input delay risk prior to real-user field exposure.
 - **Render-Blocking Hygiene:** Flags head scripts missing `async`, `defer`, or `type="module"`.
@@ -84,6 +85,14 @@ Synthetic Interaction-Risk Estimate (Lab Main-Thread Contention):
 - Estimated Interaction Contention: 42ms (Status: Good (Low INP Risk))
 - Google 200ms Target Passed: True
 - Max Long Task: 0ms | Total Long Tasks: 0
+
+Top Heaviest JavaScript Payloads (Resource Timing):
++--------------------------------------------------+---------------+--------------+--------------+
+| Script URL                                       | Transfer Size | Uncompressed | Vendor       |
++--------------------------------------------------+---------------+--------------+--------------+
+| https://webaudits.pro/_next/static/chunks/app.js | 64.2 KB       | 218.4 KB     | First-Party  |
+| https://webaudits.pro/_next/static/chunks/main.js| 42.8 KB       | 138.1 KB     | First-Party  |
++--------------------------------------------------+---------------+--------------+--------------+
 ```
 
 ---

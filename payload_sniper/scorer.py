@@ -135,8 +135,12 @@ def audit_profile_results(profile_data: Dict[str, Any]) -> Dict[str, Any]:
     if tp_blocking_ms > 100:
         recommendations.append(f"Third-party tracking scripts consume {tp_blocking_ms}ms of main-thread execution. Offload non-critical analytics (GTM, Meta, Hotjar) via Partytown web workers.")
 
-    if tp_scripts >= 8:
-        recommendations.append(f"Consolidate {tp_scripts} external third-party marketing tags to reduce DNS handshakes and asynchronous event loop congestion.")
+    transfer_bytes = profile_data.get("total_js_transfer_bytes", 0)
+    decoded_bytes = profile_data.get("total_js_decoded_bytes", 0)
+    heaviest_scripts = profile_data.get("heaviest_scripts", [])
+
+    if decoded_bytes > 1024 * 1024:
+        recommendations.append(f"Total uncompressed JavaScript ({round(decoded_bytes / (1024 * 1024), 2)} MB) exceeds the recommended 1.0 MB budget. Implement dynamic imports and route-based code-splitting.")
 
     if not recommendations:
         recommendations.append("Main-thread execution is optimal with negligible Total Blocking Time and healthy INP headroom.")
@@ -163,6 +167,9 @@ def audit_profile_results(profile_data: Dict[str, Any]) -> Dict[str, Any]:
             "long_tasks_count": len(long_tasks),
             "third_party_blocking_time_ms": tp_blocking_ms,
             "js_heap_used_mb": profile_data.get("js_heap_used_mb", 0.0),
+            "total_js_transfer_kb": round(transfer_bytes / 1024, 1),
+            "total_js_decoded_kb": round(decoded_bytes / 1024, 1),
+            "heaviest_scripts": heaviest_scripts,
         },
         "vendor_breakdown": list(vendor_stats.values()),
         "long_tasks": long_tasks[:10],

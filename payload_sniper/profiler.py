@@ -66,6 +66,21 @@ DOM_SCRIPTS_SCRIPT = """
 })()
 """
 
+RESOURCE_TIMING_SCRIPT = """
+(() => {
+    const resources = window.performance.getEntriesByType('resource') || [];
+    return resources
+        .filter(r => r.initiatorType === 'script' || (r.name && r.name.match(/\\.(js|mjs)(\\?.*)?$/i)))
+        .map(r => ({
+            name: r.name,
+            transfer_size: Math.round(r.transferSize || 0),
+            encoded_body_size: Math.round(r.encodedBodySize || 0),
+            decoded_body_size: Math.round(r.decodedBodySize || 0),
+            duration_ms: Math.round(r.duration || 0)
+        }));
+})()
+"""
+
 
 def inspect_via_http(url: str, timeout: int = 15) -> Dict[str, Any]:
     """Fallback static inspection mode when Chromium is not present."""
@@ -135,6 +150,9 @@ def inspect_via_http(url: str, timeout: int = 15) -> Dict[str, Any]:
         "long_tasks": [],
         "total_blocking_time_ms": 0,
         "max_long_task_ms": 0,
+        "total_js_transfer_bytes": 0,
+        "total_js_decoded_bytes": 0,
+        "heaviest_scripts": [],
     }
 
 
@@ -200,6 +218,33 @@ async def _profile_url_cdp(
             for m in perf_metrics_res.get("metrics", [])
         }
 
+        # Retrieve Resource Timing for scripts
+        resource_res = await client.send("Runtime.evaluate", {
+            "expression": RESOURCE_TIMING_SCRIPT,
+            "returnByValue": True,
+        })
+        raw_resources = resource_res.get("result", {}).get("value", [])
+
+        total_transfer_bytes = sum(r.get("transfer_size", 0) for r in raw_resources)
+        total_decoded_bytes = sum(r.get("decoded_body_size", 0) for r in raw_resources)
+
+        sorted_resources = sorted(
+            raw_resources,
+            key=lambda x: max(x.get("decoded_body_size", 0), x.get("transfer_size", 0)),
+            reverse=True
+        )
+        heaviest_scripts = []
+        for r in sorted_resources[:5]:
+            r_name = r.get("name", "")
+            r_class = classify_script_vendor(r_name, page_domain)
+            heaviest_scripts.append({
+                "url": r_name,
+                "transfer_kb": round(r.get("transfer_size", 0) / 1024, 1),
+                "decoded_kb": round(r.get("decoded_body_size", 0) / 1024, 1),
+                "vendor": r_class["vendor"],
+                "is_third_party": r_class["is_third_party"]
+            })
+
         # Process scripts with vendor classifications
         scripts = []
         third_party_count = 0
@@ -261,6 +306,9 @@ async def _profile_url_cdp(
             "max_long_task_ms": max_duration,
             "task_duration_total_s": round(metrics_dict.get("TaskDuration", 0), 2),
             "js_heap_used_mb": round(metrics_dict.get("JSHeapUsedSize", 0) / (1024 * 1024), 2),
+            "total_js_transfer_bytes": total_transfer_bytes,
+            "total_js_decoded_bytes": total_decoded_bytes,
+            "heaviest_scripts": heaviest_scripts,
         }
 
     finally:

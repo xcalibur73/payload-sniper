@@ -80,6 +80,36 @@ class TestAuditProfileResults(unittest.TestCase):
         self.assertEqual(res["grade"], "A")
         self.assertTrue(res["inp_estimate"]["meets_google_target"])
 
+    def test_payload_size_metrics(self):
+        profile_data = {
+            "url": "https://example.com",
+            "mode": "test",
+            "total_scripts": 4,
+            "third_party_scripts": 1,
+            "render_blocking_scripts": 0,
+            "total_blocking_time_ms": 20,
+            "max_long_task_ms": 40,
+            "total_js_transfer_bytes": 102400,   # 100 KB
+            "total_js_decoded_bytes": 2097152,  # 2 MB (exceeds 1MB budget)
+            "heaviest_scripts": [
+                {
+                    "url": "https://example.com/bundle.js",
+                    "transfer_kb": 100.0,
+                    "decoded_kb": 2048.0,
+                    "vendor": "First-Party Application",
+                    "is_third_party": False
+                }
+            ],
+            "scripts": [],
+            "long_tasks": [],
+        }
+        res = audit_profile_results(profile_data)
+        self.assertEqual(res["stats"]["total_js_transfer_kb"], 100.0)
+        self.assertEqual(res["stats"]["total_js_decoded_kb"], 2048.0)
+        self.assertEqual(len(res["stats"]["heaviest_scripts"]), 1)
+        # Verify recommendation triggered for exceeding 1MB
+        self.assertTrue(any("budget" in r.lower() for r in res["recommendations"]))
+
 
 if __name__ == "__main__":
     unittest.main()
