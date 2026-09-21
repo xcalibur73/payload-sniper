@@ -115,6 +115,8 @@ class ChromeRunner:
             "--disable-translate",
             "--hide-scrollbars",
             "--disable-gpu",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-features=IsolateOrigins,site-per-process",
             "about:blank",
         ]
 
