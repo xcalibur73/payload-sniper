@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed false positive in third-party script classification: required domain-level matching for Google Tag Manager patterns to prevent first-party paths containing `gtm.js` from being flagged as external trackers.
 - Added non-blocking recognition and `is_render_blocking_script` helper for `text/partytown`, `speculationrules`, and JSON metadata script tags.
 
+### Added
+- Linked documentation and quickstart instructions to the interactive web tool on [webaudits.pro/tools/payload-sniper](https://webaudits.pro/tools/payload-sniper).
+
 ## [1.3.1] - 2026-09-21
 
 ### Added

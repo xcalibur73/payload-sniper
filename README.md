@@ -5,8 +5,9 @@
 
 
 Main-thread Long Tasks, script bloat, and synthetic interaction-risk tracer.
-
 Part of the [WebAudits.pro](https://webaudits.pro) technical intelligence platform.
+
+> **Interactive Web Tool**: Run live JavaScript execution, INP risk, and script bloat audits directly in your browser at [webaudits.pro/tools/payload-sniper](https://webaudits.pro/tools/payload-sniper).
 
 ![Terminal Verification](assets/terminal_preview.png)
 
