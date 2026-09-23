@@ -33,6 +33,16 @@ class TestScriptAnalyzer(unittest.TestCase):
         self.assertEqual(res["vendor"], "Inline Script")
         self.assertFalse(res["is_third_party"])
 
+    def test_classify_partytown_non_blocking(self):
+        res = classify_script_vendor("https://example.com/worker.js", "example.com", script_type="text/partytown")
+        self.assertTrue(res.get("is_non_blocking"))
+        self.assertFalse(res["is_third_party"])
+
+    def test_first_party_gtm_not_flagged(self):
+        from payload_sniper.script_analyzer import is_render_blocking_script
+        self.assertFalse(is_render_blocking_script("app.js", is_async=True))
+        self.assertFalse(is_render_blocking_script("rules.json", script_type="speculationrules"))
+
 
 class TestTBTAndINPScorer(unittest.TestCase):
 

@@ -7,7 +7,7 @@ import urllib.parse
 
 
 THIRD_PARTY_PATTERNS = [
-    ("Google Tag Manager", "Tag Management", ["googletagmanager.com/gtm.js", "gtm.js?"]),
+    ("Google Tag Manager", "Tag Management", ["googletagmanager.com/gtm.js", "googletagmanager.com"]),
     ("Google Analytics (GA4)", "Analytics", ["google-analytics.com/analytics.js", "googletagmanager.com/gtag/js"]),
     ("Meta Pixel (Facebook)", "Advertising", ["connect.facebook.net", "fbevents.js"]),
     ("Hotjar", "Session Recording", ["static.hotjar.com", "script.hotjar.com"]),
@@ -27,7 +27,7 @@ THIRD_PARTY_PATTERNS = [
 ]
 
 
-def classify_script_vendor(script_url: str, page_domain: str) -> Dict[str, Any]:
+def classify_script_vendor(script_url: str, page_domain: str, script_type: str = "") -> Dict[str, Any]:
     """Classify a script URL by vendor, category, and first-party vs third-party status."""
     if not script_url:
         return {
@@ -42,6 +42,17 @@ def classify_script_vendor(script_url: str, page_domain: str) -> Dict[str, Any]:
         host = parsed.netloc.lower()
     except Exception:
         host = ""
+
+    # Check non-blocking web worker or browser speculation rule scripts
+    norm_type = (script_type or "").strip().lower()
+    if norm_type in ("text/partytown", "speculationrules", "application/json", "application/ld+json"):
+        return {
+            "vendor": "Partytown Worker" if "partytown" in norm_type else "Browser Speculation / JSON",
+            "category": "Non-Blocking Script",
+            "is_third_party": False,
+            "domain": host or page_domain,
+            "is_non_blocking": True,
+        }
 
     # Check third party patterns
     lower_url = script_url.lower()
@@ -73,3 +84,18 @@ def classify_script_vendor(script_url: str, page_domain: str) -> Dict[str, Any]:
         "is_third_party": False,
         "domain": host or page_domain,
     }
+
+
+def is_render_blocking_script(
+    script_url: str,
+    script_type: str = "",
+    is_async: bool = False,
+    is_defer: bool = False,
+) -> bool:
+    """Determine if a script tag is render-blocking."""
+    if is_async or is_defer:
+        return False
+    norm_type = (script_type or "").strip().lower()
+    if norm_type in ("text/partytown", "speculationrules", "application/json", "application/ld+json", "module"):
+        return False
+    return True
